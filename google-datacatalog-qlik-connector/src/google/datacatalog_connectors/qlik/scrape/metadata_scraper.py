@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,21 +17,20 @@
 import logging
 
 from google.datacatalog_connectors.qlik.scrape import \
-    engine_api_helper, repository_services_api_helper
+    engine_api_scraper, repository_services_api_helper
 
 
 class MetadataScraper:
     """A Facade that provides a simplified interface for the Qlik services,
     comprising the interactions between Qlik Sense Proxy Service (QPS), Qlik
     Sense Repository Service (QRS), and Qlik Engine JSON API.
-
     """
 
     def __init__(self, server_address, ad_domain, username, password):
         self.__qrs_api_helper = \
             repository_services_api_helper.RepositoryServicesAPIHelper(
                 server_address, ad_domain, username, password)
-        self.__engine_api_helper = engine_api_helper.EngineAPIHelper(
+        self.__engine_api_scraper = engine_api_scraper.EngineAPIScraper(
             server_address, ad_domain, username, password)
 
     def scrape_all_apps(self):
@@ -69,10 +68,40 @@ class MetadataScraper:
 
         return streams
 
+    def scrape_dimensions(self, app_metadata):
+        self.__log_scrape_start(
+            'Scraping Dimensions (Master Items) from the'
+            ' "%s" App...', app_metadata.get('name'))
+        dimensions = self.__engine_api_scraper.get_dimensions(
+            app_metadata.get('id')) or []
+
+        logging.info('  %s Dimensions found:', len(dimensions))
+        for dimension in dimensions:
+            q_meta_def = dimension.get('qMetaDef')
+            logging.info('    - %s [%s]', q_meta_def.get('title'),
+                         dimension.get('qInfo').get('qId'))
+
+        return dimensions
+
+    def scrape_measures(self, app_metadata):
+        self.__log_scrape_start(
+            'Scraping Measures (Master Items) from the'
+            ' "%s" App...', app_metadata.get('name'))
+        measures = self.__engine_api_scraper.get_measures(
+            app_metadata.get('id')) or []
+
+        logging.info('  %s Measures found:', len(measures))
+        for measure in measures:
+            q_meta_def = measure.get('qMetaDef')
+            logging.info('    - %s [%s]', q_meta_def.get('title'),
+                         measure.get('qInfo').get('qId'))
+
+        return measures
+
     def scrape_sheets(self, app_metadata):
         self.__log_scrape_start('Scraping Sheets from the "%s" App...',
                                 app_metadata.get('name'))
-        sheets = self.__engine_api_helper.get_sheets(
+        sheets = self.__engine_api_scraper.get_sheets(
             app_metadata.get('id')) or []
 
         logging.info('  %s Sheets found:', len(sheets))
@@ -84,6 +113,21 @@ class MetadataScraper:
                          sheet.get('qInfo').get('qId'))
 
         return sheets
+
+    def scrape_visualizations(self, app_metadata):
+        self.__log_scrape_start(
+            'Scraping Visualizations (Master Items) from the'
+            ' "%s" App...', app_metadata.get('name'))
+        visualizations = self.__engine_api_scraper.get_visualizations(
+            app_metadata.get('id')) or []
+
+        logging.info('  %s Visualizations found:', len(visualizations))
+        for visualization in visualizations:
+            q_meta_def = visualization.get('qMetaDef')
+            logging.info('    - %s [%s]', q_meta_def.get('title'),
+                         visualization.get('qInfo').get('qId'))
+
+        return visualizations
 
     @classmethod
     def __log_scrape_start(cls, message, *args):

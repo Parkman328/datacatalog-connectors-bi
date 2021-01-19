@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,14 +16,14 @@
 
 import setuptools
 
-release_status = 'Development Status :: 3 - Alpha'
+release_status = 'Development Status :: 4 - Beta'
 
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
 setuptools.setup(
     name='google-datacatalog-qlik-connector',
-    version='0.1.0',
+    version='0.1.1',
     author='Google LLC',
     description='Package for ingesting Qlik metadata'
     ' into Google Cloud Data Catalog',
@@ -38,8 +38,9 @@ setuptools.setup(
     },
     include_package_data=True,
     install_requires=(
-        'google-datacatalog-connectors-commons ~= 0.6',
-        'requests_ntlm ~= 1.1',
+        'google-datacatalog-connectors-commons ~= 0.6.7',
+        'jmespath ~= 0.10.0',
+        'requests_ntlm ~= 1.1.0',
         'websockets ~= 8.1',
     ),
     setup_requires=('pytest-runner',),

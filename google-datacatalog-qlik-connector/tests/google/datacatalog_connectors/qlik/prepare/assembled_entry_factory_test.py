@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -121,6 +121,64 @@ class AssembledEntryFactoryTest(unittest.TestCase):
         self.assertEqual(1, len(tags))
         self.__tag_factory.make_tag_for_app.assert_called_once()
 
+    def test_make_assembled_entries_for_stream_should_process_dimensions(self):
+        entry_factory = self.__entry_factory
+        entry_factory.make_entry_for_stream.return_value = ('id', {})
+        entry_factory.make_entry_for_app.return_value = ('id', {})
+        entry_factory.make_entry_for_dimension.return_value = ('id', {})
+
+        tag_templates_dict = {
+            'qlik_dimension_metadata': {
+                'name': 'tagTemplates/qlik_dimension_metadata',
+            }
+        }
+
+        fake_stream = self.__make_fake_stream()
+        fake_app = self.__make_fake_app()
+        fake_app['dimensions'].append(self.__make_fake_dimension())
+        fake_stream['apps'].append(fake_app)
+        assembled_entries = \
+            self.__factory.make_assembled_entries_for_stream(
+                fake_stream, tag_templates_dict)
+
+        self.assertEqual(3, len(assembled_entries))
+        entry_factory.make_entry_for_dimension.assert_called_once()
+
+        dimension_assembled_entry = assembled_entries[2]
+        tags = dimension_assembled_entry.tags
+
+        self.assertEqual(1, len(tags))
+        self.__tag_factory.make_tag_for_dimension.assert_called_once()
+
+    def test_make_assembled_entries_for_stream_should_process_measures(self):
+        entry_factory = self.__entry_factory
+        entry_factory.make_entry_for_stream.return_value = ('id', {})
+        entry_factory.make_entry_for_app.return_value = ('id', {})
+        entry_factory.make_entry_for_measure.return_value = ('id', {})
+
+        tag_templates_dict = {
+            'qlik_measure_metadata': {
+                'name': 'tagTemplates/qlik_measure_metadata',
+            }
+        }
+
+        fake_stream = self.__make_fake_stream()
+        fake_app = self.__make_fake_app()
+        fake_app['measures'].append(self.__make_fake_measure())
+        fake_stream['apps'].append(fake_app)
+        assembled_entries = \
+            self.__factory.make_assembled_entries_for_stream(
+                fake_stream, tag_templates_dict)
+
+        self.assertEqual(3, len(assembled_entries))
+        entry_factory.make_entry_for_measure.assert_called_once()
+
+        measure_assembled_entry = assembled_entries[2]
+        tags = measure_assembled_entry.tags
+
+        self.assertEqual(1, len(tags))
+        self.__tag_factory.make_tag_for_measure.assert_called_once()
+
     def test_make_assembled_entries_for_stream_should_process_sheets(self):
         entry_factory = self.__entry_factory
         entry_factory.make_entry_for_stream.return_value = ('id', {})
@@ -150,10 +208,41 @@ class AssembledEntryFactoryTest(unittest.TestCase):
         self.assertEqual(1, len(tags))
         self.__tag_factory.make_tag_for_sheet.assert_called_once()
 
+    def test_make_assembled_entries_for_stream_should_process_visualizations(
+            self):
+
+        entry_factory = self.__entry_factory
+        entry_factory.make_entry_for_stream.return_value = ('id', {})
+        entry_factory.make_entry_for_app.return_value = ('id', {})
+        entry_factory.make_entry_for_visualization.return_value = ('id', {})
+
+        tag_templates_dict = {
+            'qlik_visualization_metadata': {
+                'name': 'tagTemplates/qlik_visualization_metadata',
+            }
+        }
+
+        fake_stream = self.__make_fake_stream()
+        fake_app = self.__make_fake_app()
+        fake_app['visualizations'].append(self.__make_fake_visualization())
+        fake_stream['apps'].append(fake_app)
+        assembled_entries = \
+            self.__factory.make_assembled_entries_for_stream(
+                fake_stream, tag_templates_dict)
+
+        self.assertEqual(3, len(assembled_entries))
+        entry_factory.make_entry_for_visualization.assert_called_once()
+
+        measure_assembled_entry = assembled_entries[2]
+        tags = measure_assembled_entry.tags
+
+        self.assertEqual(1, len(tags))
+        self.__tag_factory.make_tag_for_visualization.assert_called_once()
+
     @classmethod
     def __make_fake_stream(cls):
         return {
-            'id': 'test_stream',
+            'id': 'test-stream',
             'name': 'Test stream',
             'apps': [],
         }
@@ -161,18 +250,54 @@ class AssembledEntryFactoryTest(unittest.TestCase):
     @classmethod
     def __make_fake_app(cls):
         return {
-            'id': 'test_app',
+            'id': 'test-app',
             'name': 'Test app',
+            'dimensions': [],
+            'measures': [],
+            'visualizations': [],
             'sheets': [],
+        }
+
+    @classmethod
+    def __make_fake_dimension(cls):
+        return {
+            'qInfo': {
+                'qId': 'test-dimension',
+            },
+            'qMetaDef': {
+                'title': 'Test dimension',
+            },
+        }
+
+    @classmethod
+    def __make_fake_measure(cls):
+        return {
+            'qInfo': {
+                'qId': 'test-measure',
+            },
+            'qMetaDef': {
+                'title': 'Test measure',
+            },
         }
 
     @classmethod
     def __make_fake_sheet(cls):
         return {
             'qInfo': {
-                'qId': 'test_sheet',
+                'qId': 'test-sheet',
             },
             'qMeta': {
                 'title': 'Test sheet',
+            },
+        }
+
+    @classmethod
+    def __make_fake_visualization(cls):
+        return {
+            'qInfo': {
+                'qId': 'test-visualization',
+            },
+            'qMetaDef': {
+                'title': 'Test visualization',
             },
         }

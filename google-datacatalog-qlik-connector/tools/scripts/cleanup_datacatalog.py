@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -94,6 +94,15 @@ def __delete_tag_templates(project_id, location_id):
         datacatalog.DataCatalogClient.tag_template_path(
             project_id, location_id,
             'qlik_custom_property_definition_metadata'))
+    template_names.append(
+        datacatalog.DataCatalogClient.tag_template_path(
+            project_id, location_id, 'qlik_dimension_metadata'))
+    template_names.append(
+        datacatalog.DataCatalogClient.tag_template_path(
+            project_id, location_id, 'qlik_measure_metadata'))
+    template_names.append(
+        datacatalog.DataCatalogClient.tag_template_path(
+            project_id, location_id, 'qlik_visualization_metadata'))
     template_names.append(
         datacatalog.DataCatalogClient.tag_template_path(
             project_id, location_id, 'qlik_sheet_metadata'))

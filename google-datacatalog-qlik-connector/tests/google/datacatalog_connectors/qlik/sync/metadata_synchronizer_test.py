@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,18 +22,16 @@ from google.datacatalog_connectors.commons import prepare
 
 from google.datacatalog_connectors.qlik import sync
 
-__SYNC_PACKAGE = 'google.datacatalog_connectors.qlik.sync'
-_SYNCR_MODULE = f'{__SYNC_PACKAGE}.metadata_synchronizer'
 
-
-@mock.patch(f'{_SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor')
-@mock.patch(f'{_SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner')
-@mock.patch(f'{_SYNCR_MODULE}.prepare.EntryRelationshipMapper')
 class MetadataSynchronizerTest(unittest.TestCase):
+    __SYNC_PACKAGE = 'google.datacatalog_connectors.qlik.sync'
+    __SYNCR_MODULE = f'{__SYNC_PACKAGE}.metadata_synchronizer'
 
-    @mock.patch(f'{_SYNCR_MODULE}.prepare.AssembledEntryFactory')
-    @mock.patch(f'{_SYNCR_MODULE}.scrape.MetadataScraper')
-    def setUp(self, mock_scraper, mock_assembled_entry_factory):
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.AssembledEntryFactory',
+                lambda *args, **kwargs: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.scrape.MetadataScraper',
+                lambda *args, **kwargs: mock.MagicMock())
+    def setUp(self):
         self.__synchronizer = sync.MetadataSynchronizer(
             qlik_server_address='test-server',
             qlik_ad_domain='test-domain',
@@ -42,9 +40,7 @@ class MetadataSynchronizerTest(unittest.TestCase):
             datacatalog_project_id='test-project-id',
             datacatalog_location_id='test-location-id')
 
-    def test_constructor_should_set_instance_attributes(
-            self, mock_mapper, mock_cleaner, mock_ingestor):
-
+    def test_constructor_should_set_instance_attributes(self):
         attrs = self.__synchronizer.__dict__
 
         self.assertEqual('test-project-id',
@@ -59,8 +55,12 @@ class MetadataSynchronizerTest(unittest.TestCase):
         self.assertIsNotNone(
             attrs['_MetadataSynchronizer__assembled_entry_factory'])
 
+    @mock.patch(f'{__SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor')
+    @mock.patch(f'{__SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner')
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.EntryRelationshipMapper',
+                lambda *args: mock.MagicMock())
     def test_run_no_metadata_should_clean_but_not_ingest_metadata(
-            self, mock_mapper, mock_cleaner, mock_ingestor):
+            self, mock_cleaner, mock_ingestor):
 
         scraper = self.__synchronizer.__dict__[
             '_MetadataSynchronizer__metadata_scraper']
@@ -76,6 +76,9 @@ class MetadataSynchronizerTest(unittest.TestCase):
         ingestor = mock_ingestor.return_value
         ingestor.ingest_metadata.assert_not_called()
 
+    @mock.patch(f'{__SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor')
+    @mock.patch(f'{__SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner')
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.EntryRelationshipMapper')
     def test_run_custom_property_def_should_traverse_main_workflow_steps(
             self, mock_mapper, mock_cleaner, mock_ingestor):
 
@@ -85,18 +88,18 @@ class MetadataSynchronizerTest(unittest.TestCase):
             '_MetadataSynchronizer__assembled_entry_factory']
 
         scraper.scrape_all_custom_property_definitions.return_value = [{
-            'id': 'test_def',
+            'id': 'test-def',
         }]
         assembled_entry_factory.make_assembled_entry_for_custom_property_def\
             .return_value = prepare.AssembledEntryData(
-                'test_def',
+                'test-def',
                 self.__make_fake_entry('custom_property_definition'),
                 [])
 
         self.__synchronizer.run()
 
         expected_make_assembled_entries_call_arg = {
-            'id': 'test_def',
+            'id': 'test-def',
         }
 
         actual_call_args = assembled_entry_factory\
@@ -113,11 +116,16 @@ class MetadataSynchronizerTest(unittest.TestCase):
         ingestor = mock_ingestor.return_value
         ingestor.ingest_metadata.assert_called_once()
 
-    @mock.patch(f'{_SYNCR_MODULE}.prepare.DataCatalogTagTemplateFactory'
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.DataCatalogTagTemplateFactory'
                 f'.make_tag_template_for_custom_property_value')
+    @mock.patch(f'{__SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.EntryRelationshipMapper',
+                lambda *args: mock.MagicMock())
     def test_run_custom_property_def_should_make_template_for_choice_value(
-            self, mock_make_tag_template_for_custom_property_value,
-            mock_mapper, mock_cleaner, mock_ingestor):
+            self, mock_make_tag_template_for_custom_property_value):
 
         mock_make_tag_template_for_custom_property_value.return_value.name = \
             'parent/tagTemplates/def__value_1'
@@ -126,7 +134,7 @@ class MetadataSynchronizerTest(unittest.TestCase):
         scraper = attrs['_MetadataSynchronizer__metadata_scraper']
 
         scraper.scrape_all_custom_property_definitions.return_value = [{
-            'id': 'test_def',
+            'id': 'test-def',
             'choiceValues': ['Value 1']
         }]
 
@@ -134,6 +142,9 @@ class MetadataSynchronizerTest(unittest.TestCase):
 
         mock_make_tag_template_for_custom_property_value.assert_called_once()
 
+    @mock.patch(f'{__SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor')
+    @mock.patch(f'{__SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner')
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.EntryRelationshipMapper')
     def test_run_stream_metadata_should_traverse_main_workflow_steps(
             self, mock_mapper, mock_cleaner, mock_ingestor):
 
@@ -145,12 +156,12 @@ class MetadataSynchronizerTest(unittest.TestCase):
         scraper.scrape_all_streams.return_value = [self.__make_fake_stream()]
         assembled_entry_factory.make_assembled_entries_for_stream\
             .return_value = [prepare.AssembledEntryData(
-                'test_stream', self.__make_fake_entry('stream'), [])]
+                'test-stream', self.__make_fake_entry('stream'), [])]
 
         self.__synchronizer.run()
 
         expected_make_assembled_entries_call_arg = {
-            'id': 'test_stream',
+            'id': 'test-stream',
         }
 
         actual_call_args = assembled_entry_factory\
@@ -167,8 +178,13 @@ class MetadataSynchronizerTest(unittest.TestCase):
         ingestor = mock_ingestor.return_value
         ingestor.ingest_metadata.assert_called_once()
 
+    @mock.patch(f'{__SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor')
+    @mock.patch(f'{__SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.EntryRelationshipMapper',
+                lambda *args: mock.MagicMock())
     def test_run_stream_metadata_should_process_only_required_template(
-            self, mock_mapper, mock_cleaner, mock_ingestor):
+            self, mock_ingestor):
 
         attrs = self.__synchronizer.__dict__
         scraper = attrs['_MetadataSynchronizer__metadata_scraper']
@@ -182,7 +198,7 @@ class MetadataSynchronizerTest(unittest.TestCase):
                                         '/tagTemplates/qlik_stream_metadata')
         assembled_entry_factory.make_assembled_entries_for_stream\
             .return_value = [prepare.AssembledEntryData(
-                'test_stream', fake_entry, [fake_tag])]
+                'test-stream', fake_entry, [fake_tag])]
 
         self.__synchronizer.run()
 
@@ -193,9 +209,13 @@ class MetadataSynchronizerTest(unittest.TestCase):
         self.assertEqual(1, len(templates_dict_call_arg))
         self.assertTrue('qlik_stream_metadata' in templates_dict_call_arg)
 
-    def test_run_published_app_should_properly_ask_assembled_entries(
-            self, mock_mapper, mock_cleaner, mock_ingestor):
-
+    @mock.patch(f'{__SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.EntryRelationshipMapper',
+                lambda *args: mock.MagicMock())
+    def test_run_published_app_should_properly_ask_assembled_entries(self):
         attrs = self.__synchronizer.__dict__
         scraper = attrs['_MetadataSynchronizer__metadata_scraper']
         assembled_entry_factory = attrs[
@@ -204,19 +224,25 @@ class MetadataSynchronizerTest(unittest.TestCase):
         scraper.scrape_all_streams.return_value = [self.__make_fake_stream()]
         scraper.scrape_all_apps.return_value = \
             [self.__make_fake_published_app()]
+        scraper.scrape_dimensions.return_value = []
+        scraper.scrape_measures.return_value = []
+        scraper.scrape_visualizations.return_value = []
         scraper.scrape_sheets.return_value = []
 
         self.__synchronizer.run()
 
         expected_make_assembled_entries_call_arg = {
             'id':
-                'test_stream',
+                'test-stream',
             'apps': [{
-                'id': 'test_app',
+                'id': 'test-app',
                 'published': True,
                 'stream': {
-                    'id': 'test_stream'
+                    'id': 'test-stream'
                 },
+                'dimensions': [],
+                'measures': [],
+                'visualizations': [],
                 'sheets': [],
             }]
         }
@@ -226,9 +252,13 @@ class MetadataSynchronizerTest(unittest.TestCase):
         self.assertEqual(expected_make_assembled_entries_call_arg,
                          actual_call_args[0])
 
-    def test_run_not_published_app_should_properly_ask_assembled_entries(
-            self, mock_mapper, mock_cleaner, mock_ingestor):
-
+    @mock.patch(f'{__SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.EntryRelationshipMapper',
+                lambda *args: mock.MagicMock())
+    def test_run_not_published_app_should_properly_ask_assembled_entries(self):
         attrs = self.__synchronizer.__dict__
         scraper = attrs['_MetadataSynchronizer__metadata_scraper']
         assembled_entry_factory = attrs[
@@ -239,13 +269,13 @@ class MetadataSynchronizerTest(unittest.TestCase):
         assembled_entry_factory.make_assembled_entries_for_stream\
             .return_value = [
                 prepare.AssembledEntryData(
-                    'test_stream', self.__make_fake_entry('stream'), [])
+                    'test-stream', self.__make_fake_entry('stream'), [])
             ]
 
         self.__synchronizer.run()
 
         expected_make_assembled_entries_call_arg = {
-            'id': 'test_stream',
+            'id': 'test-stream',
         }
 
         actual_call_args = assembled_entry_factory\
@@ -253,9 +283,13 @@ class MetadataSynchronizerTest(unittest.TestCase):
         self.assertEqual(expected_make_assembled_entries_call_arg,
                          actual_call_args[0])
 
-    def test_run_published_sheet_should_properly_ask_assembled_entries(
-            self, mock_mapper, mock_cleaner, mock_ingestor):
-
+    @mock.patch(f'{__SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.EntryRelationshipMapper',
+                lambda *args: mock.MagicMock())
+    def test_run_dimension_should_properly_ask_assembled_entries(self):
         attrs = self.__synchronizer.__dict__
         scraper = attrs['_MetadataSynchronizer__metadata_scraper']
         assembled_entry_factory = attrs[
@@ -264,6 +298,169 @@ class MetadataSynchronizerTest(unittest.TestCase):
         scraper.scrape_all_streams.return_value = [self.__make_fake_stream()]
         scraper.scrape_all_apps.return_value = \
             [self.__make_fake_published_app()]
+        scraper.scrape_dimensions.return_value = [self.__make_fake_dimension()]
+        scraper.scrape_measures.return_value = []
+        scraper.scrape_visualizations.return_value = []
+        scraper.scrape_sheets.return_value = []
+
+        self.__synchronizer.run()
+
+        expected_make_assembled_entries_call_arg = {
+            'id':
+                'test-stream',
+            'apps': [{
+                'id': 'test-app',
+                'published': True,
+                'stream': {
+                    'id': 'test-stream'
+                },
+                'dimensions': [{
+                    'qInfo': {
+                        'qId': 'test-dimension',
+                    },
+                    'qDim': {},
+                    'qMetaDef': {},
+                    'app': {
+                        'id': 'test-app',
+                        'name': None
+                    },
+                }],
+                'measures': [],
+                'visualizations': [],
+                'sheets': [],
+            }]
+        }
+
+        actual_call_args = assembled_entry_factory\
+            .make_assembled_entries_for_stream.call_args[0]
+        self.assertEqual(expected_make_assembled_entries_call_arg,
+                         actual_call_args[0])
+
+    @mock.patch(f'{__SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.EntryRelationshipMapper',
+                lambda *args: mock.MagicMock())
+    def test_run_measure_should_properly_ask_assembled_entries(self):
+        attrs = self.__synchronizer.__dict__
+        scraper = attrs['_MetadataSynchronizer__metadata_scraper']
+        assembled_entry_factory = attrs[
+            '_MetadataSynchronizer__assembled_entry_factory']
+
+        scraper.scrape_all_streams.return_value = [self.__make_fake_stream()]
+        scraper.scrape_all_apps.return_value = \
+            [self.__make_fake_published_app()]
+        scraper.scrape_dimensions.return_value = []
+        scraper.scrape_measures.return_value = [self.__make_fake_measure()]
+        scraper.scrape_visualizations.return_value = []
+        scraper.scrape_sheets.return_value = []
+
+        self.__synchronizer.run()
+
+        expected_make_assembled_entries_call_arg = {
+            'id':
+                'test-stream',
+            'apps': [{
+                'id': 'test-app',
+                'published': True,
+                'stream': {
+                    'id': 'test-stream'
+                },
+                'dimensions': [],
+                'measures': [{
+                    'qInfo': {
+                        'qId': 'test-measure',
+                    },
+                    'qMeasure': {},
+                    'qMetaDef': {},
+                    'app': {
+                        'id': 'test-app',
+                        'name': None
+                    },
+                }],
+                'visualizations': [],
+                'sheets': [],
+            }]
+        }
+
+        actual_call_args = assembled_entry_factory\
+            .make_assembled_entries_for_stream.call_args[0]
+        self.assertEqual(expected_make_assembled_entries_call_arg,
+                         actual_call_args[0])
+
+    @mock.patch(f'{__SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.EntryRelationshipMapper',
+                lambda *args: mock.MagicMock())
+    def test_run_visualization_should_properly_ask_assembled_entries(self):
+        attrs = self.__synchronizer.__dict__
+        scraper = attrs['_MetadataSynchronizer__metadata_scraper']
+        assembled_entry_factory = attrs[
+            '_MetadataSynchronizer__assembled_entry_factory']
+
+        scraper.scrape_all_streams.return_value = [self.__make_fake_stream()]
+        scraper.scrape_all_apps.return_value = \
+            [self.__make_fake_published_app()]
+        scraper.scrape_dimensions.return_value = []
+        scraper.scrape_measures.return_value = []
+        scraper.scrape_visualizations.return_value = [
+            self.__make_fake_visualization()
+        ]
+        scraper.scrape_sheets.return_value = []
+
+        self.__synchronizer.run()
+
+        expected_make_assembled_entries_call_arg = {
+            'id':
+                'test-stream',
+            'apps': [{
+                'id': 'test-app',
+                'published': True,
+                'stream': {
+                    'id': 'test-stream'
+                },
+                'dimensions': [],
+                'measures': [],
+                'visualizations': [{
+                    'qInfo': {
+                        'qId': 'test-visualization',
+                    },
+                    'qMetaDef': {},
+                    'app': {
+                        'id': 'test-app',
+                        'name': None
+                    },
+                }],
+                'sheets': [],
+            }]
+        }
+
+        actual_call_args = assembled_entry_factory\
+            .make_assembled_entries_for_stream.call_args[0]
+        self.assertEqual(expected_make_assembled_entries_call_arg,
+                         actual_call_args[0])
+
+    @mock.patch(f'{__SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.EntryRelationshipMapper',
+                lambda *args: mock.MagicMock())
+    def test_run_published_sheet_should_properly_ask_assembled_entries(self):
+        attrs = self.__synchronizer.__dict__
+        scraper = attrs['_MetadataSynchronizer__metadata_scraper']
+        assembled_entry_factory = attrs[
+            '_MetadataSynchronizer__assembled_entry_factory']
+
+        scraper.scrape_all_streams.return_value = [self.__make_fake_stream()]
+        scraper.scrape_all_apps.return_value = \
+            [self.__make_fake_published_app()]
+        scraper.scrape_dimensions.return_value = []
+        scraper.scrape_measures.return_value = []
+        scraper.scrape_visualizations.return_value = []
         scraper.scrape_sheets.return_value = [
             self.__make_fake_published_sheet()
         ]
@@ -272,24 +469,27 @@ class MetadataSynchronizerTest(unittest.TestCase):
 
         expected_make_assembled_entries_call_arg = {
             'id':
-                'test_stream',
+                'test-stream',
             'apps': [{
                 'id':
-                    'test_app',
+                    'test-app',
                 'published':
                     True,
                 'stream': {
-                    'id': 'test_stream'
+                    'id': 'test-stream'
                 },
+                'dimensions': [],
+                'measures': [],
+                'visualizations': [],
                 'sheets': [{
                     'qInfo': {
-                        'qId': 'test_sheet',
+                        'qId': 'test-sheet',
                     },
                     'qMeta': {
                         'published': True,
                     },
                     'app': {
-                        'id': 'test_app',
+                        'id': 'test-app',
                         'name': None
                     },
                 }],
@@ -301,8 +501,14 @@ class MetadataSynchronizerTest(unittest.TestCase):
         self.assertEqual(expected_make_assembled_entries_call_arg,
                          actual_call_args[0])
 
+    @mock.patch(f'{__SYNCR_MODULE}.ingest.DataCatalogMetadataIngestor',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.cleanup.DataCatalogMetadataCleaner',
+                lambda *args: mock.MagicMock())
+    @mock.patch(f'{__SYNCR_MODULE}.prepare.EntryRelationshipMapper',
+                lambda *args: mock.MagicMock())
     def test_run_not_published_sheet_should_properly_ask_assembled_entries(
-            self, mock_mapper, mock_cleaner, mock_ingestor):
+            self):
 
         attrs = self.__synchronizer.__dict__
         scraper = attrs['_MetadataSynchronizer__metadata_scraper']
@@ -312,19 +518,25 @@ class MetadataSynchronizerTest(unittest.TestCase):
         scraper.scrape_all_streams.return_value = [self.__make_fake_stream()]
         scraper.scrape_all_apps.return_value = \
             [self.__make_fake_published_app()]
+        scraper.scrape_dimensions.return_value = []
+        scraper.scrape_measures.return_value = []
+        scraper.scrape_visualizations.return_value = []
         scraper.scrape_sheets.return_value = [self.__make_fake_wip_sheet()]
 
         self.__synchronizer.run()
 
         expected_make_assembled_entries_call_arg = {
             'id':
-                'test_stream',
+                'test-stream',
             'apps': [{
-                'id': 'test_app',
+                'id': 'test-app',
                 'published': True,
                 'stream': {
-                    'id': 'test_stream'
+                    'id': 'test-stream'
                 },
+                'dimensions': [],
+                'measures': [],
+                'visualizations': [],
                 'sheets': [],
             }]
         }
@@ -337,13 +549,13 @@ class MetadataSynchronizerTest(unittest.TestCase):
     @classmethod
     def __make_fake_stream(cls):
         return {
-            'id': 'test_stream',
+            'id': 'test-stream',
         }
 
     @classmethod
     def __make_fake_published_app(cls):
         return {
-            'id': 'test_app',
+            'id': 'test-app',
             'published': True,
             'stream': cls.__make_fake_stream(),
         }
@@ -351,15 +563,44 @@ class MetadataSynchronizerTest(unittest.TestCase):
     @classmethod
     def __make_fake_wip_app(cls):
         return {
-            'id': 'test_app',
+            'id': 'test-app',
             'published': False,
+        }
+
+    @classmethod
+    def __make_fake_dimension(cls):
+        return {
+            'qInfo': {
+                'qId': 'test-dimension',
+            },
+            'qDim': {},
+            'qMetaDef': {},
+        }
+
+    @classmethod
+    def __make_fake_measure(cls):
+        return {
+            'qInfo': {
+                'qId': 'test-measure',
+            },
+            'qMeasure': {},
+            'qMetaDef': {},
+        }
+
+    @classmethod
+    def __make_fake_visualization(cls):
+        return {
+            'qInfo': {
+                'qId': 'test-visualization',
+            },
+            'qMetaDef': {},
         }
 
     @classmethod
     def __make_fake_sheet(cls):
         return {
             'qInfo': {
-                'qId': 'test_sheet',
+                'qId': 'test-sheet',
             },
             'qMeta': {},
         }

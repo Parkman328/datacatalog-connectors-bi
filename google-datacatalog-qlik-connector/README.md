@@ -5,12 +5,12 @@ currently supporting below asset types:
 - Custom Property Definition
 - Stream
 - App (only the published ones)
+- Master Items: Dimension  
+- Master Items: Measure
+- Master Items: Visualization
 - Sheet (only the published ones)
 
 **Disclaimer: This is not an officially supported Google product.**
-
-> **WORK IN PROGRESS**: This connector is under active development and breaking
-> changes are expected in the coming weeks!
 
 <!--
   ⚠️ DO NOT UPDATE THE TABLE OF CONTENTS MANUALLY ️️⚠️

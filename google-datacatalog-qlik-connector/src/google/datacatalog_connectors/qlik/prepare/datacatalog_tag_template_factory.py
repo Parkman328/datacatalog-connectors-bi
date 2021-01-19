@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -188,6 +188,90 @@ class DataCatalogTagTemplateFactory(prepare.BaseTagTemplateFactory):
 
         return tag_template
 
+    def make_tag_template_for_dimension(self):
+        tag_template = datacatalog.TagTemplate()
+
+        tag_template.name = datacatalog.DataCatalogClient.tag_template_path(
+            project=self.__project_id,
+            location=self.__location_id,
+            tag_template=constants.TAG_TEMPLATE_ID_DIMENSION)
+
+        tag_template.display_name = 'Qlik Dimension Metadata'
+
+        self._add_primitive_type_field(tag_template, 'id', self.__STRING_TYPE,
+                                       'Unique Id')
+
+        self._add_enum_type_field(tag_template, 'grouping', [
+            constants.DIMENSION_GROUPING_SINGLE_TAG_FIELD,
+            constants.DIMENSION_GROUPING_DRILL_DOWN_TAG_FIELD
+        ], 'Grouping')
+
+        self._add_primitive_type_field(tag_template, 'fields',
+                                       self.__STRING_TYPE, 'Fields')
+
+        self._add_primitive_type_field(tag_template, 'field_labels',
+                                       self.__STRING_TYPE, 'Field labels')
+
+        self._add_primitive_type_field(tag_template, 'tags',
+                                       self.__STRING_TYPE, 'Qlik tags')
+
+        self._add_primitive_type_field(tag_template, 'app_id',
+                                       self.__STRING_TYPE, 'App Id')
+
+        self._add_primitive_type_field(tag_template, 'app_name',
+                                       self.__STRING_TYPE, 'App name')
+
+        self._add_primitive_type_field(tag_template, 'app_entry',
+                                       self.__STRING_TYPE,
+                                       'Data Catalog Entry for the App')
+
+        self._add_primitive_type_field(tag_template, 'site_url',
+                                       self.__STRING_TYPE,
+                                       'Qlik Sense site url')
+
+        return tag_template
+
+    def make_tag_template_for_measure(self):
+        tag_template = datacatalog.TagTemplate()
+
+        tag_template.name = datacatalog.DataCatalogClient.tag_template_path(
+            project=self.__project_id,
+            location=self.__location_id,
+            tag_template=constants.TAG_TEMPLATE_ID_MEASURE)
+
+        tag_template.display_name = 'Qlik Measure Metadata'
+
+        self._add_primitive_type_field(tag_template, 'id', self.__STRING_TYPE,
+                                       'Unique Id')
+
+        self._add_primitive_type_field(tag_template, 'expression',
+                                       self.__STRING_TYPE, 'Expression')
+
+        self._add_primitive_type_field(tag_template, 'label_expression',
+                                       self.__STRING_TYPE, 'Label expression')
+
+        self._add_primitive_type_field(tag_template, 'is_custom_formatted',
+                                       self.__BOOL_TYPE, 'Is custom formatted')
+
+        self._add_primitive_type_field(tag_template, 'tags',
+                                       self.__STRING_TYPE, 'Qlik tags')
+
+        self._add_primitive_type_field(tag_template, 'app_id',
+                                       self.__STRING_TYPE, 'App Id')
+
+        self._add_primitive_type_field(tag_template, 'app_name',
+                                       self.__STRING_TYPE, 'App name')
+
+        self._add_primitive_type_field(tag_template, 'app_entry',
+                                       self.__STRING_TYPE,
+                                       'Data Catalog Entry for the App')
+
+        self._add_primitive_type_field(tag_template, 'site_url',
+                                       self.__STRING_TYPE,
+                                       'Qlik Sense site url')
+
+        return tag_template
+
     def make_tag_template_for_sheet(self):
         tag_template = datacatalog.TagTemplate()
 
@@ -260,6 +344,50 @@ class DataCatalogTagTemplateFactory(prepare.BaseTagTemplateFactory):
         self._add_primitive_type_field(tag_template, 'modified_by_username',
                                        self.__STRING_TYPE,
                                        'Username who modified it')
+
+        self._add_primitive_type_field(tag_template, 'site_url',
+                                       self.__STRING_TYPE,
+                                       'Qlik Sense site url')
+
+        return tag_template
+
+    def make_tag_template_for_visualization(self):
+        tag_template = datacatalog.TagTemplate()
+
+        tag_template.name = datacatalog.DataCatalogClient.tag_template_path(
+            project=self.__project_id,
+            location=self.__location_id,
+            tag_template=constants.TAG_TEMPLATE_ID_VISUALIZATION)
+
+        tag_template.display_name = 'Qlik Visualization Metadata'
+
+        self._add_primitive_type_field(tag_template, 'id', self.__STRING_TYPE,
+                                       'Unique Id')
+
+        self._add_primitive_type_field(tag_template, 'title',
+                                       self.__STRING_TYPE, 'Title')
+
+        self._add_primitive_type_field(tag_template, 'subtitle',
+                                       self.__STRING_TYPE, 'Subtitle')
+
+        self._add_primitive_type_field(tag_template, 'footnote',
+                                       self.__STRING_TYPE, 'Footnote')
+
+        self._add_primitive_type_field(tag_template, 'type',
+                                       self.__STRING_TYPE, 'Type')
+
+        self._add_primitive_type_field(tag_template, 'tags',
+                                       self.__STRING_TYPE, 'Qlik tags')
+
+        self._add_primitive_type_field(tag_template, 'app_id',
+                                       self.__STRING_TYPE, 'App Id')
+
+        self._add_primitive_type_field(tag_template, 'app_name',
+                                       self.__STRING_TYPE, 'App name')
+
+        self._add_primitive_type_field(tag_template, 'app_entry',
+                                       self.__STRING_TYPE,
+                                       'Data Catalog Entry for the App')
 
         self._add_primitive_type_field(tag_template, 'site_url',
                                        self.__STRING_TYPE,

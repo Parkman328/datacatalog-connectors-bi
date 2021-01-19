@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -63,7 +63,8 @@ class MetadataSynchronizer:
         custom_property_defs = self.__scrape_custom_property_definitions()
 
         logging.info('')
-        logging.info('Objects to be scraped: Streams, Apps, and Sheets')
+        logging.info('Objects to be scraped:'
+                     ' Streams, Apps, Dimensions, Measures, and Sheets')
         streams = self.__scrape_streams()
         logging.info('==== DONE ========================================')
 
@@ -101,16 +102,19 @@ class MetadataSynchronizer:
         logging.info('==== DONE ========================================')
 
     def __scrape_custom_property_definitions(self):
-        """Scrape metadata from all the Custom Property Definitions the current
-        user has access to.
+        """Scrapes metadata from all the Custom Property Definitions the
+        current user has access to.
 
         :return: A ``list`` of Custom Property Definition metadata.
         """
         return self.__metadata_scraper.scrape_all_custom_property_definitions()
 
     def __scrape_streams(self):
-        """Scrape metadata from all the Streams the current user has access to.
-        The returned metadata include nested objects such as Apps and Sheets.
+        """Scrapes metadata from all the Streams the current user has access
+        to.
+
+        The returned metadata include nested objects such as Apps and
+        Sheets.
 
         :return: A ``list`` of Stream metadata.
         """
@@ -122,9 +126,12 @@ class MetadataSynchronizer:
         published_apps = [app for app in all_apps if app.get('published')]
 
         for app in published_apps:
-            # The 'sheets' field is not available in the scrape apps API
-            # response, so it is injected into the returned metadata object to
-            # turn further processing more efficient.
+            # The below fields are not available in the scrape apps API
+            # response, so they are injected into the returned metadata object
+            # to turn further processing more efficient.
+            app['dimensions'] = self.__scrape_dimensions(app)
+            app['measures'] = self.__scrape_measures(app)
+            app['visualizations'] = self.__scrape_visualizations(app)
             app['sheets'] = self.__scrape_published_sheets(app)
 
         self.__assemble_streams_metadata_from_flat_lists(
@@ -132,8 +139,62 @@ class MetadataSynchronizer:
 
         return all_streams
 
+    def __scrape_dimensions(self, app):
+        """Scrapes metadata from the Dimensions the current user has access to
+        within the given App.
+
+        :return: A ``list`` of dimension metadata.
+        """
+        dimensions = self.__metadata_scraper.scrape_dimensions(app)
+        # The 'app' field is not available in the scrape dimensions API
+        # response, so it is injected into the returned metadata object to turn
+        # further processing more efficient.
+        for dimension in dimensions:
+            dimension['app'] = {
+                'id': app.get('id'),
+                'name': app.get('name'),
+            }
+
+        return dimensions
+
+    def __scrape_measures(self, app):
+        """Scrapes metadata from the Measures the current user has access to
+        within the given App.
+
+        :return: A ``list`` of measure metadata.
+        """
+        measures = self.__metadata_scraper.scrape_measures(app)
+        # The 'app' field is not available in the scrape measures API
+        # response, so it is injected into the returned metadata object to turn
+        # further processing more efficient.
+        for measure in measures:
+            measure['app'] = {
+                'id': app.get('id'),
+                'name': app.get('name'),
+            }
+
+        return measures
+
+    def __scrape_visualizations(self, app):
+        """Scrapes metadata from the Visualizations the current user has access
+        to within the given App.
+
+        :return: A ``list`` of visualization metadata.
+        """
+        visualizations = self.__metadata_scraper.scrape_visualizations(app)
+        # The 'app' field is not available in the scrape visualizations API
+        # response, so it is injected into the returned metadata object to turn
+        # further processing more efficient.
+        for visualization in visualizations:
+            visualization['app'] = {
+                'id': app.get('id'),
+                'name': app.get('name'),
+            }
+
+        return visualizations
+
     def __scrape_published_sheets(self, app):
-        """Scrape metadata from all the published Sheets the current user has
+        """Scrapes metadata from all the published Sheets the current user has
         access to within the given App.
 
         :return: A ``list`` of sheet metadata.
@@ -158,7 +219,7 @@ class MetadataSynchronizer:
     @classmethod
     def __assemble_streams_metadata_from_flat_lists(cls, all_streams,
                                                     published_apps):
-        """Assemble the streams metadata from the given flat asset lists.
+        """Assembles the streams metadata from the given flat asset lists.
 
         """
         streams_dict = {}
@@ -191,6 +252,15 @@ class MetadataSynchronizer:
             make_tag_template_for_custom_property_definition())
         self.__add_template_to_dict(
             templates_dict,
+            self.__tag_template_factory.make_tag_template_for_dimension())
+        self.__add_template_to_dict(
+            templates_dict,
+            self.__tag_template_factory.make_tag_template_for_measure())
+        self.__add_template_to_dict(
+            templates_dict,
+            self.__tag_template_factory.make_tag_template_for_visualization())
+        self.__add_template_to_dict(
+            templates_dict,
             self.__tag_template_factory.make_tag_template_for_sheet())
         self.__add_template_to_dict(
             templates_dict,
@@ -213,7 +283,7 @@ class MetadataSynchronizer:
 
     def __make_assembled_entries_dict(self, custom_property_defs_metadata,
                                       streams_metadata, tag_templates_dict):
-        """Make Data Catalog entries and tags for the Qlik assets the current
+        """Makes Data Catalog entries and tags for the Qlik assets the current
         user has access to.
 
         Returns:
@@ -334,7 +404,7 @@ class MetadataSynchronizer:
 
     def __filter_required_tag_templates(self, assembled_entries,
                                         tag_templates_dict):
-        """Filter the Tag Templates that are required to ingest the given
+        """Filters the Tag Templates that are required to ingest the given
         Entries and their Tags.
 
         This utility method should be called before any call to

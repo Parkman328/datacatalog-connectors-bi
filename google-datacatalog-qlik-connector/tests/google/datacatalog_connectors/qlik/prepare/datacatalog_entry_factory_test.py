@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -88,6 +88,7 @@ class DataCatalogEntryFactoryTest(unittest.TestCase):
 
         metadata = {
             'id': 'a123-b456',
+            'name': 'Test app',
             'createdDate': '2019-09-12T16:30:00.005Z',
         }
 
@@ -135,6 +136,69 @@ class DataCatalogEntryFactoryTest(unittest.TestCase):
         self.assertEqual(
             updated_datetime.timestamp(),
             entry.source_system_timestamps.update_time.timestamp())
+
+    def test_make_entry_for_dimension_should_set_all_available_fields(self):
+        metadata = {
+            'qInfo': {
+                'qId': 'a123-b456',
+            },
+            'qMetaDef': {
+                'title': 'Test dimension',
+                'description': 'Description of the Test dimension',
+            },
+            'app': {
+                'id': 'app-id'
+            },
+        }
+
+        entry_id, entry = self.__factory.make_entry_for_dimension(metadata)
+
+        self.assertEqual('qlik_dim_app_id_a123_b456', entry_id)
+
+        self.assertEqual(
+            'projects/test-project/locations/test-location/'
+            'entryGroups/test-entry-group/entries/'
+            'qlik_dim_app_id_a123_b456', entry.name)
+        self.assertEqual('test-system', entry.user_specified_system)
+        self.assertEqual('dimension', entry.user_specified_type)
+        self.assertEqual('Test dimension', entry.display_name)
+        self.assertEqual('Description of the Test dimension',
+                         entry.description)
+
+        self.assertEqual('', entry.linked_resource)
+        self.assertIsNone(entry.source_system_timestamps.create_time)
+        self.assertIsNone(entry.source_system_timestamps.update_time)
+
+    def test_make_entry_for_measure_should_set_all_available_fields(self):
+        metadata = {
+            'qInfo': {
+                'qId': 'a123-b456',
+            },
+            'qMetaDef': {
+                'title': 'Test measure',
+                'description': 'Description of the Test measure',
+            },
+            'app': {
+                'id': 'app-id'
+            },
+        }
+
+        entry_id, entry = self.__factory.make_entry_for_measure(metadata)
+
+        self.assertEqual('qlik_msr_app_id_a123_b456', entry_id)
+
+        self.assertEqual(
+            'projects/test-project/locations/test-location/'
+            'entryGroups/test-entry-group/entries/'
+            'qlik_msr_app_id_a123_b456', entry.name)
+        self.assertEqual('test-system', entry.user_specified_system)
+        self.assertEqual('measure', entry.user_specified_type)
+        self.assertEqual('Test measure', entry.display_name)
+        self.assertEqual('Description of the Test measure', entry.description)
+
+        self.assertEqual('', entry.linked_resource)
+        self.assertIsNone(entry.source_system_timestamps.create_time)
+        self.assertIsNone(entry.source_system_timestamps.update_time)
 
     def test_make_entry_for_sheet_should_set_all_available_fields(self):
         metadata = {
@@ -188,6 +252,7 @@ class DataCatalogEntryFactoryTest(unittest.TestCase):
                 'qId': 'a123-b456',
             },
             'qMeta': {
+                'title': 'Test sheet',
                 'createdDate': '2019-09-12T16:30:00.005Z',
             },
             'app': {
@@ -242,6 +307,7 @@ class DataCatalogEntryFactoryTest(unittest.TestCase):
 
         metadata = {
             'id': 'a123-b456',
+            'name': 'Test stream',
             'createdDate': '2019-09-12T16:30:00.005Z',
         }
 
@@ -252,6 +318,40 @@ class DataCatalogEntryFactoryTest(unittest.TestCase):
         self.assertEqual(
             created_datetime.timestamp(),
             entry.source_system_timestamps.update_time.timestamp())
+
+    def test_make_entry_for_visualization_should_set_all_available_fields(
+            self):
+
+        metadata = {
+            'qInfo': {
+                'qId': 'a123-b456',
+            },
+            'qMetaDef': {
+                'title': 'Test visualization',
+                'description': 'Description of the Test visualization',
+            },
+            'app': {
+                'id': 'app-id'
+            },
+        }
+
+        entry_id, entry = self.__factory.make_entry_for_visualization(metadata)
+
+        self.assertEqual('qlik_viz_a123_b456', entry_id)
+
+        self.assertEqual(
+            'projects/test-project/locations/test-location/'
+            'entryGroups/test-entry-group/entries/'
+            'qlik_viz_a123_b456', entry.name)
+        self.assertEqual('test-system', entry.user_specified_system)
+        self.assertEqual('visualization', entry.user_specified_type)
+        self.assertEqual('Test visualization', entry.display_name)
+        self.assertEqual('Description of the Test visualization',
+                         entry.description)
+
+        self.assertEqual('', entry.linked_resource)
+        self.assertIsNone(entry.source_system_timestamps.create_time)
+        self.assertIsNone(entry.source_system_timestamps.update_time)
 
     def test_make_entry_long_id_should_limit_result_id_length(self):
         metadata = {
